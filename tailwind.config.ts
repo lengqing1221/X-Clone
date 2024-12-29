@@ -13,6 +13,8 @@ export default {
         foreground: "var(--foreground)",
         transparentBlack: "#171919",
         border: '#2f3336',
+        customGray: "#71767a",
+        customBlue: "#198cd8",
       },
     },
   },

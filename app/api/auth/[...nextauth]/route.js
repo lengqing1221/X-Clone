@@ -1,11 +1,11 @@
 import GitHubProvider from "next-auth/providers/github";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
-import User from "@/models/User.model";
-import connectDB from "@/lib/mongodb";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import NextAuth from "next-auth/next";
+import handleUserCreation from "@/controllers/Credentials_controller";
+import handleGoogleUser from "@/controllers/GoogleUser_controller";
 // import { redirect } from 'next/navigation'
 
 export const authOptions = {
@@ -20,23 +20,12 @@ export const authOptions = {
         const { email, password } = credentials
 
         try {
-          // Ensure DB is connected
-          await connectDB();
 
           // Hash the password before saving it
           const hashedPassword = await bcrypt.hash(password, 10);
 
           // Create and save the new User
-          const newUser = new User({
-            email,
-            password: hashedPassword,
-            name: 'defaukt',
-            image: '', 
-          });
-          await newUser.save();
-
-          // Generate JWT token
-          console.log(newUser);
+          handleUserCreation({ email, password: hashedPassword });
           
           const tokenData = jwt.sign(
             { id: newUser._id,
@@ -80,7 +69,7 @@ export const authOptions = {
     // jwt callback is correct, so no change needed here.
     async jwt({ token, user }) {
       if (user) { 
-        token.id = user.id;
+        token.id = user._id;
         token.email = user.email;
         token.name = user.name || '';
         token.image = user.image || '';
@@ -91,7 +80,6 @@ export const authOptions = {
     // session callback is also correct
     async session({ session, token }) {
       console.log(session);
-      
       session.user.id = token.id;
       session.user.email = token.email;
       session.user.name = token.name;
@@ -99,29 +87,19 @@ export const authOptions = {
       return session;
     },
   
-    // signIn callback needs to accept the correct parameters
+    // signIn callback needs to accept the correct parameters 
     async signIn({ profile }) {
-      if (profile) {
-        await connectDB();
-        console.log(profile);
-        
-        const existingUser = await User.findOne({ email: profile.email });
-    
-        if (!existingUser) {
-          const newUser = new User({
-            email: profile.email,
-            name: profile.name,
-            image: profile.image,
-          });
-    
-          await newUser.save();
-          console.log("New user created:", newUser);
+      try {
+        if (profile && profile.email && profile.name) {
+          await handleGoogleUser(profile);
+          return true; // Successful sign-in
         }
-    
-        return true; // Ensure to return true for a successful sign-in
+        console.error("Invalid profile data:", profile);
+        return false; // Return false if profile is undefined
+      } catch (error) {
+        console.error("Error in signIn:", error);
+        return false; // Return false if an error occurs
       }
-    
-      return false; // Return false if something goes wrong
     }
   },    
 };

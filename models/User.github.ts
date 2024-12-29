@@ -1,6 +1,6 @@
 import mongoose from 'mongoose'
 
-const GoogleUserSchema = new mongoose.Schema({ 
+const UserGithubSchema = new mongoose.Schema({ 
     email: {
         type: String,
         required: [true, 'Please provide an email'],
@@ -22,4 +22,4 @@ const GoogleUserSchema = new mongoose.Schema({
     },
 }, {timestamps: true})
 
-export default mongoose.models.GoogleUser || mongoose.model('GoogleUser', GoogleUserSchema);
+export default mongoose.models.GithubUser || mongoose.model('GithubUser', UserGithubSchema);
